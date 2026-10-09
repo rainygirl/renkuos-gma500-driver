@@ -305,24 +305,36 @@ device_write(void* cookie, off_t position, const void* buffer, size_t* length)
 }
 
 
+/* buffer 는 ioctl 을 부른 프로세스의 주소다. 커널에서 직접 읽고 쓰면
+   잘못된 주소 하나로 커널 패닉이 나므로 user_strlcpy/user_memcpy 로만
+   다룬다 (intel_extreme 과 같은 방식). length 는 B_GET_* 호출에서 0 으로
+   오기도 하므로 문자열은 B_PATH_NAME_LENGTH 를 상한으로 쓴다. */
 static status_t
 device_control(void* cookie, uint32 op, void* buffer, size_t length)
 {
 	switch (op) {
 		case B_GET_ACCELERANT_SIGNATURE:
-			strcpy((char*)buffer, POULSBO_ACCELERANT_NAME);
+			if (user_strlcpy((char*)buffer, POULSBO_ACCELERANT_NAME,
+					B_FILE_NAME_LENGTH) < B_OK)
+				return B_BAD_ADDRESS;
 			return B_OK;
 
 		case B_GET_PATH_FOR_DEVICE:
-			strcpy((char*)buffer, "/dev/graphics/poulsbo");
+			if (user_strlcpy((char*)buffer, "/dev/graphics/poulsbo",
+					B_PATH_NAME_LENGTH) < B_OK)
+				return B_BAD_ADDRESS;
 			return B_OK;
 
 		case POULSBO_GET_PRIVATE_DATA:
 		{
-			poulsbo_private_data* data = (poulsbo_private_data*)buffer;
-			if (data->magic != POULSBO_PRIVATE_MAGIC)
+			poulsbo_private_data data;
+			if (user_memcpy(&data, buffer, sizeof(data)) < B_OK)
+				return B_BAD_ADDRESS;
+			if (data.magic != POULSBO_PRIVATE_MAGIC)
 				return B_BAD_VALUE;
-			data->shared_info_area = sSharedArea;
+			data.shared_info_area = sSharedArea;
+			if (user_memcpy(buffer, &data, sizeof(data)) < B_OK)
+				return B_BAD_ADDRESS;
 			return B_OK;
 		}
 	}

@@ -587,7 +587,7 @@ poulsbo_allocate_overlay_buffer(color_space space, uint16 width, uint16 height)
 	uint32 bytesPerPixel;
 	uint32 bytesPerRow;
 
-	if (sOverlayBufferUsed)
+	if (sOverlayBufferUsed || width == 0 || height == 0)
 		return NULL;
 
 	switch (space) {
@@ -702,7 +702,9 @@ poulsbo_configure_overlay(overlay_token token, const overlay_buffer* buffer,
 {
 	uint32 control;
 	uint32 offset;
+	uint32 bytesPerPixel;
 	int32 left, top, right, bottom;
+	int32 srcX, srcY;
 
 	if (token != (overlay_token)&sOverlayTokenUsed
 		|| buffer != &sOverlayBuffer)
@@ -730,17 +732,30 @@ poulsbo_configure_overlay(overlay_token token, const overlay_buffer* buffer,
 	if (bottom > (int32)sShared->current_mode.virtual_height)
 		bottom = sShared->current_mode.virtual_height;
 
-	offset = (uint32)view->v_start * buffer->bytes_per_row;
+	/* 원본에서 읽기 시작할 픽셀. 화면 밖으로 잘린 만큼 민다. */
+	bytesPerPixel = buffer->space == B_RGB16 ? 2 : 4;
+	srcX = view->h_start;
+	srcY = view->v_start;
 	if (left < 0) {
-		offset += (uint32)(-left) * (buffer->bytes_per_row / buffer->width);
+		srcX -= left;
 		left = 0;
 	}
 	if (top < 0) {
-		offset += (uint32)(-top) * buffer->bytes_per_row;
+		srcY -= top;
 		top = 0;
 	}
-	offset += (uint32)view->h_start
-		* (buffer->space == B_RGB16 ? 2 : 4);
+	/* 평면이 버퍼 끝을 넘어 읽지 않게 한다 - 넘으면 스톨른 밖의 메모리가
+	   화면에 뿌려진다. */
+	if (srcX >= buffer->width || srcY >= buffer->height) {
+		left = right;
+	} else {
+		if (right - left > buffer->width - srcX)
+			right = left + (buffer->width - srcX);
+		if (bottom - top > buffer->height - srcY)
+			bottom = top + (buffer->height - srcY);
+	}
+	offset = (uint32)srcY * buffer->bytes_per_row
+		+ (uint32)srcX * bytesPerPixel;
 
 	if (left >= right || top >= bottom) {
 		if (sSpriteVisible) {
