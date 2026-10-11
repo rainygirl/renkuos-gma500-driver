@@ -320,7 +320,7 @@ accelerant 는 이 평면으로 오버레이 훅을 구현한다. 드라이버�
 accelerant 는 드래그가 시작됐다는 사실조차 받지 못한다 - 커서 훅이 있는 모든
 accelerant 에서 업스트림도 같다.
 
-고친 곳은 VAIO P 패치(`haiku-sony-vaio-p-patch` 의 `vaio-p-patches.diff`)다.
+고친 곳은 VAIO P 패치(`renkuos-sony-vaio-p-patch` 의 `vaio-p-patches.diff`)다.
 드래그 비트맵이 걸리면 소프트웨어 커서로 바꾸고, 풀리면 하드웨어 커서로
 되돌린다. 드래그 중 `SetCursor()` 도 소프트웨어에 머문다. 패치하지 않은
 시스템에 이 드라이버만 설치하면 증상은 그대로다.
