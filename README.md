@@ -117,8 +117,7 @@ not usable from an app until that is fixed. See [AGENTS.md](AGENTS.md).
 ## AI disclosure
 
 Parts of this driver were developed with the assistance of AI coding tools
-(Anthropic's Claude). All code has been reviewed and tested by the author on
-real hardware.
+(Anthropic's Claude). All code has been reviewed and tested by the author.
 
 ## License
 
